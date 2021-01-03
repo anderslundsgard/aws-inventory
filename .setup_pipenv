@@ -1,0 +1,48 @@
+#!/bin/bash
+
+hash pip3 2>/dev/null
+if [[ $? -ne 0 ]]; then
+    echo '================================================================================================='
+    echo 'No PIP detected, please install Python correctly. ABORTING!'
+    echo '================================================================================================='
+    exit 0
+fi
+
+hash pipenv 2>/dev/null
+if [[ $? -ne 0 ]]; then
+    echo '================================================================================================='
+    echo 'No PIPENV detected, performing install via PIP:'
+    echo '================================================================================================='
+    pip3 install pipenv
+fi
+
+export PIPENV_VENV_IN_PROJECT='true'
+
+FOLDER_TO_CREATE_VENV_SHELL=$(pwd)/python
+
+echo '================================================================================================='
+echo 'The virtualenv is located in the following folder:'
+echo ${FOLDER_TO_CREATE_VENV_SHELL}
+echo '================================================================================================='
+
+
+# Update dependencies in pipfile.lock based on pipfile
+# and activate the virtualenv
+pipenv_update() {
+    pipenv clean
+    pipenv update --dev --three
+    pipenv shell
+}
+
+# Install dependencies from pipfile.lock
+# and activate the virtualenv
+pipenv_sync() {
+    pipenv sync --dev --three
+    pipenv shell
+}
+
+pipenv_update
+
+echo '================================================================================================='
+echo 'ALL DONE, HAVE FUN!'
+echo '================================================================================================='
