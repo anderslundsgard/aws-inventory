@@ -29,20 +29,21 @@ echo '==========================================================================
 # Update dependencies in pipfile.lock based on pipfile
 # and activate the virtualenv
 pipenv_update() {
-    pipenv clean
-    pipenv update --dev --three
+    pipenv clean --python 3.7
+    pipenv install --python 3.7
+    pipenv update --dev --python 3.7
     pipenv shell
 }
 
 # Install dependencies from pipfile.lock
 # and activate the virtualenv
 pipenv_sync() {
-    pipenv sync --dev --three
+    pipenv sync --dev --python 3.7
     pipenv shell
 }
 
 pipenv_update
 
 echo '================================================================================================='
-echo 'ALL DONE, HAVE FUN!'
+echo 'CLOSED PIPENV VIRTUAL ENVIRONMENT!'
 echo '================================================================================================='
