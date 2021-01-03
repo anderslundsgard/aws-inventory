@@ -16,6 +16,7 @@ if [[ $? -ne 0 ]]; then
     sudo pip3 install pipenv
 fi
 
+export LANG=en_GB.UTF-8
 export PIPENV_VENV_IN_PROJECT='true'
 
 FOLDER_TO_CREATE_VENV_SHELL=$(pwd)/python
@@ -31,26 +32,6 @@ pipenv install --dev
 # Enter virtual environment
 pipenv shell
 
-# Update dependencies in pipfile.lock based on pipfile
-# and activate the virtualenv
-pipenv_update() {
-    # pipenv clean --python 3.7
-    pipenv install --python 3.7
-    pipenv update --dev --python 3.7
-    # pipenv clean --three
-    # pipenv install --three
-    # pipenv update --three
-    pipenv shell
-}
-
-# Install dependencies from pipfile.lock
-# and activate the virtualenv
-pipenv_sync() {
-    pipenv sync --dev --python 3.7
-    pipenv shell
-}
-
-# pipenv_update
 
 echo '================================================================================================='
 echo 'CLOSED PIPENV VIRTUAL ENVIRONMENT!'
