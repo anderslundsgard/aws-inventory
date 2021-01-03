@@ -25,9 +25,11 @@ echo 'The virtualenv is located in the following folder:'
 echo ${FOLDER_TO_CREATE_VENV_SHELL}
 echo '================================================================================================='
 
-pipenv install
+# Install dependencies
+pipenv install --dev
+
+# Enter virtual environment
 pipenv shell
-python --version
 
 # Update dependencies in pipfile.lock based on pipfile
 # and activate the virtualenv
