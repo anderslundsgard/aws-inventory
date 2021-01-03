@@ -23,15 +23,20 @@ def print_caller_identity():
 # EC2 - Number of Instances
 def inventory_ec2_instances():
     client = boto3.client('ec2', 'eu-west-1')
-    print('inventory_ec2_instances')
+    # print('inventory_ec2_instances')
 
 
-def dont_call_me():
-    client = boto3.client('ec2', 'eu-west-1')
-    print('dont_call_me')
+# IAM - Number of IAM Users
+def inventory_iam_users():
+    client = boto3.client('iam')
+    response = client.list_users()
+    users_count = len(response['Users'])
+    if users_count > 0:
+        print(f'$$$ {users_count} IAM Users found!')
 
 
 scan()
 
-
+print('')
+print('========================================================================================================')
 print('DONE!')
