@@ -29,6 +29,15 @@ def print_caller_identity():
     print('')
 
 
+# Account - MFA should be enabled on root user
+def inventory_account_mfa_on_root_user():
+    client = boto3.client('iam')
+    response = client.get_account_summary()
+    account_mfa_enabled = response['SummaryMap']['AccountMFAEnabled']
+    if not account_mfa_enabled:
+        print('$$$ MAF on ROOT is not enabled')
+
+
 # EC2 - Security Groups should not be wide open for the world
 def inventory_ec2_wide_open_security_groups():
     client = boto3.client('ec2', region)
