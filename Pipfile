@@ -8,6 +8,7 @@ boto3 = {version = "*", index = "https://pypi.org/simple"}
 
 [dev-packages]
 pylint = {version = "*", index = "https://pypi.org/simple"}
+flake8 = {version = "*", index = "https://pypi.org/simple"}
 
 [requires]
 python_version = "3.7"

@@ -3,6 +3,7 @@ import boto3
 
 region = 'eu-west-1'
 
+
 def scan():
     print_caller_identity()
 
@@ -11,15 +12,21 @@ def scan():
     for function in dsp:
         if 'inventory' in str(function):
             function()
+    
+    print('')
+    print('========================================================================================================')
+    print('DONE!')
             
 
 def print_caller_identity():
     client = boto3.client('sts')
     response = client.get_caller_identity()
     arn = response['Arn']
+    print('')
     print('========================================================================================================')
     print(f'Caller identity: {arn}')
     print('========================================================================================================')
+    print('')
 
 
 # EC2 - Security Groups should not be wide open for the world
@@ -52,10 +59,3 @@ def inventory_iam_users():
     users_count = len(response['Users'])
     if users_count > 0:
         print(f'$$$ {users_count} IAM Users found!')
-
-
-scan()
-
-print('')
-print('========================================================================================================')
-print('DONE!')
