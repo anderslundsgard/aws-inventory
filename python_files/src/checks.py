@@ -35,7 +35,7 @@ def inventory_account_mfa_on_root_user():
     response = client.get_account_summary()
     account_mfa_enabled = response['SummaryMap']['AccountMFAEnabled']
     if not account_mfa_enabled:
-        print('$$$ MAF on ROOT is not enabled')
+        print('$$$ MFA on ROOT is not enabled')
 
 
 # EC2 - Security Groups should not be wide open for the world
