@@ -1,4 +1,5 @@
 import boto3
+from botocore.exceptions import ClientError
 
 
 region = 'eu-west-1'
@@ -19,14 +20,21 @@ def scan():
             
 
 def print_caller_identity():
-    client = boto3.client('sts')
-    response = client.get_caller_identity()
-    arn = response['Arn']
-    print('')
-    print('========================================================================================================')
-    print(f'Caller identity: {arn}')
-    print('========================================================================================================')
-    print('')
+    try:
+        client = boto3.client('sts')
+        response = client.get_caller_identity()
+        arn = response['Arn']
+        print('')
+        print('========================================================================================================')
+        print(f'Caller identity: {arn}')
+        print('========================================================================================================')
+        print('')
+    except ClientError:
+        print('========================================================================================================')
+        print(f'Unknown Caller identity. No access to do sts:GetCallerIdentity.')
+        print(f'Make sure your current IAM User/Role has access to policies SecurityAudit and ReadOnlyAccess.')
+        print('========================================================================================================')
+        
 
 
 # Account - MFA should be enabled on root user
