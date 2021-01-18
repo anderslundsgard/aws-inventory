@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 boto3 = {version = "*", index = "https://pypi.org/simple"}
+colorama = {version = "*", index = "https://pypi.org/simple"}
 
 [dev-packages]
 pylint = {version = "*", index = "https://pypi.org/simple"}

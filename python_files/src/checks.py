@@ -1,6 +1,7 @@
 import boto3
 from botocore.exceptions import ClientError
 from helpers import assume_role_session
+from colorama import Fore, Back, Style
 
 
 region = 'eu-west-1'
@@ -44,7 +45,8 @@ def scan_organization_accounts():
     print('')
     print('----------------------------------------------------------------------------------------------------')
     print('***** Checks *****')
-    format_table_pattern = '{:<50s}'  # {:<30s}{:<20s}{:<15s}'
+    format_table_pattern_header = '{:<48}'  # {:<30s}{:<20s}{:<15s}'
+    format_table_pattern = '{:<50}'  # {:<30s}{:<20s}{:<15s}'
     
     count = 0
     header_checks_columns = []
@@ -52,13 +54,15 @@ def scan_organization_accounts():
         function_name = function.__name__
         if 'inventory' in function_name:
             print(f'{count}: {function_name}')
-            format_table_pattern += '{:<10s}'            
+            format_table_pattern += '{:<7s}'     
+            format_table_pattern_header += '{:<7s}'     
             count += 1
-            header_checks_columns.append(f'Check {count}')    
+            header_checks_columns.append(f'{count}  ')    
+    format_table_pattern += '{:<7s}'
 
     print('')
     print('----------------------------------------------------------------------------------------------------')
-    header_line = format_table_pattern.format('Account Name', *header_checks_columns)
+    header_line = format_table_pattern_header.format('Account Name', *header_checks_columns)
     print(header_line)
 
     # Scan all accounts
@@ -66,22 +70,18 @@ def scan_organization_accounts():
         account_name = account['Name']
         account_id = account['Id']
         accounts.append(account_id)
-        # print('')
-        # print(f'{account_name} ({account_id})')
-        # print('========================================================================================================')
-        
+
         session = assume_role_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
 
         checks_passed = []
         for function in dsp:
             function_name = function.__name__
             if 'inventory' in function_name:
-                check_passed = function(session)
-                check_string = 'Y' if check_passed else 'N'
+                check_passed = function(session)                
+                check_string = Back.GREEN + '   \u2665   ' if check_passed else Back.RED + '   \u2020   '
                 checks_passed.append(check_string)
-        lines = format_table_pattern.format(account_name, *checks_passed)
+        lines = format_table_pattern.format(Back.BLACK + account_name, *checks_passed, Back.BLACK + '')
         print(lines)
-
 
 
 def print_caller_identity():
