@@ -76,3 +76,20 @@ def inventory_iam_users():
     users_count = len(response['Users'])
     if users_count > 0:
         print(f'$$$ {users_count} IAM Users found!')
+
+
+# IAM - Wide open IAM roles
+def inventory_wide_open_iam_role():
+    client = boto3.client('iam')
+    response = client.list_roles()
+    roles = response['Roles']
+    for role in roles:
+        assume_role_policy_document = role['AssumeRolePolicyDocument']
+        role_name = role['RoleName']
+        statements = assume_role_policy_document['Statement']
+        for statement in statements:
+            principal = statement['Principal']
+            if 'AWS' in principal:
+                if principal['AWS'] == '*':
+                    print(f'$$$ Wide open IAM Role: {role_name}')
+        
