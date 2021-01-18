@@ -15,4 +15,15 @@ Resources:
           IpProtocol: tcp 
           ToPort: 22
 
+  TestWideOpenIamRole:
+    Type: AWS::IAM::Role 
+    Properties: 
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: 
+              AWS: '*'
+            Action:
+              - sts:AssumeRole
 
