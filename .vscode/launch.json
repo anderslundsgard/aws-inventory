@@ -5,10 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: main.py",
+            "name": "Python: main_single.py",
             "type": "python",
             "request": "launch",
-            "program": "./python_files/src/main.py",
+            "program": "./python_files/src/main_single.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: main_multi.py",
+            "type": "python",
+            "request": "launch",
+            "program": "./python_files/src/main_multi.py",
             "console": "integratedTerminal"
         }
     ]

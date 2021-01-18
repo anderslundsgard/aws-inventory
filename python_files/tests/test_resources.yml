@@ -26,4 +26,3 @@ Resources:
               AWS: '*'
             Action:
               - sts:AssumeRole
-
