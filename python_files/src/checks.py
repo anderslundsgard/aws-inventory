@@ -48,7 +48,7 @@ def scan_organization_accounts():
     format_table_pattern_header = '{:<48}'  # {:<30s}{:<20s}{:<15s}'
     format_table_pattern = '{:<50}'  # {:<30s}{:<20s}{:<15s}'
     
-    count = 0
+    count = 1
     header_checks_columns = []
     for function in dsp:
         function_name = function.__name__
@@ -56,8 +56,8 @@ def scan_organization_accounts():
             print(f'{count}: {function_name}')
             format_table_pattern += '{:<7s}'     
             format_table_pattern_header += '{:<7s}'     
-            count += 1
-            header_checks_columns.append(f'{count}  ')    
+            header_checks_columns.append(f'{count}  ') 
+            count += 1               
     format_table_pattern += '{:<7s}'
 
     print('')
