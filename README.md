@@ -28,13 +28,21 @@ Although the tool is very lightweight it can also be extended with additional ch
 
 ## Try it out!
 
-1. Log in to an AWS account of your choice. Access to CloudShell is needed and [SecurityAudit][2] + [ReadOnlyAccess][3] permission on your IAM User/Role is needed. Do not use any User/Role with write permission such as [AdministratorAccess][3]. (Zero trust also for the code in this tool.)
+1. Log in to an AWS account of your choice. Access to CloudShell is needed and [SecurityAudit][2] + [ReadOnlyAccess][3] permission on your IAM User/Role is needed. 
     - *ToDo: Link to sample role and policy*
-1. Open CloudShell
-1. Clone this repository: ```git clone https://github.com/anderslundsgard/aws-inventory.git```
-1. Step into repo folder: ```cd aws-inventory```
-1. Init CloudShell: ```. .cloudshell_init```
-1. Run AWS Inventory checks: ```. .run_checks```
+2. Open CloudShell
+3. Clone this repository: ```git clone https://github.com/anderslundsgard/aws-inventory.git```
+4. Step into repo folder: ```cd aws-inventory```
+5. Init CloudShell: ```. .cloudshell_init```  
+
+*You can now choose between single or multi (AWS Organization) check*  
+
+**Alternative 1, Single account check**: Run AWS Inventory checks: ```. .run_single_checks```  
+
+**Alternative 2, Multi  account check**: Run AWS Inventory checks: ```. .run_org_checks```
+
+*Sample output for multi account assessment*
+![Multi account check sample](./organization-scan-sample.png)
 
 
 [1]: https://aws.amazon.com/cloudshell/
