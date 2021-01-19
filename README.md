@@ -1,7 +1,7 @@
 # AWS Inventory
-A set of checks for doing audit and inventory of AWS accounts.  
+A set of checks for doing audit and inventory of AWS accounts. Perfect suitable for companies that feel they are a bit behind in their Cloud Security journey.  
 
-AWS Inventory is an extremely lightweight tool to do an audit of a single AWS account or 1000's of accounts in an AWS Organization.  
+**AWS Inventory** is an extremely lightweight tool to do an audit of a single AWS account or 1000's of accounts in an AWS Organization.  
 
 ## Stage of the project
 
