@@ -14,8 +14,12 @@ def scan_single_account():
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
 
     for function in dsp:
-        if 'inventory' in str(function):
-            function()
+        function_name = function.__name__
+        if 'inventory' in function_name:
+            compliant = function()
+            if not compliant:
+                print(f'Failed on: {function_name}')
+
     
     print('')
     print('========================================================================================================')
