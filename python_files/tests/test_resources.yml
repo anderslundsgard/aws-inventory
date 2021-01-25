@@ -26,3 +26,20 @@ Resources:
               AWS: '*'
             Action:
               - sts:AssumeRole
+
+  TestWideOpenSqs:
+    Type: AWS::SQS::Queue
+    
+  TestWideOpenSqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties: 
+      PolicyDocument: 
+        Statement: 
+          - 
+            Action: 
+              - "SQS:ReceiveMessage"
+            Effect: "Allow"
+            Resource: !Ref TestWideOpenSqs
+            Principal: '*'
+      Queues: 
+        - !Ref TestWideOpenSqs
