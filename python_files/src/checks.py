@@ -172,4 +172,22 @@ def inventory_wide_open_iam_role(session = boto3) -> bool:
                     return False
 
     return True
+
+
+# SQS - Wide open SQS queue
+def inventory_wide_open_sqs_queue(session = boto3) -> bool:
+    client = session.client('sqs', region)
+    response = client.list_queues()
+    if 'QueueUrls' not in response:
+        return True
+        
+    for queue_url in response['QueueUrls']:
+        response_policy = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])
+        policy_json = response_policy['Attributes']['Policy']
+        policy = eval(policy_json)
+        for statement in policy['Statement']:
+            if statement['Principal'] == '*':
+                return False    
+        
+    return True
         
