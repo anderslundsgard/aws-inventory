@@ -1,1 +1,3 @@
-python python_files/src/main_multi.py 
+#!/bin/sh
+
+python python_files/src/main_multi.py "$@"

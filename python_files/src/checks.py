@@ -1,32 +1,42 @@
 import boto3
+import datetime
 from botocore.exceptions import ClientError
 from helpers import assume_role_session
 from colorama import Fore, Back, Style
+from assessment.assessment import Assessment, Check, CheckMetadata, ComplianceStatus
 
 
 region = 'eu-west-1'
-audit_role_name = 'gov-audit-role'
 
 
 def scan_single_account():
-    print_caller_identity()
+    account_id = print_caller_identity()
 
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
+
+    assessment = Assessment('Current account', account_id)
 
     for function in dsp:
         function_name = function.__name__
         if 'inventory' in function_name:
-            compliant = function()
-            if not compliant:
-                print(f'Failed on: {function_name}')
+            check = function()
+            if not check or check.compliance_status is ComplianceStatus.Compliant:
+                continue
+            assessment.add_check(check)
+            if check.compliance_status is ComplianceStatus.NonCompliant:
+                print(f' *** Failed on: {function_name}')
 
     
+    print('')
+    print('========================================================================================================')
+    print(str(assessment))
+
     print('')
     print('========================================================================================================')
     print('DONE!')
 
 
-def scan_organization_accounts():
+def scan_organization_accounts(audit_role_name):
     print_caller_identity()
 
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
@@ -81,8 +91,8 @@ def scan_organization_accounts():
         for function in dsp:
             function_name = function.__name__
             if 'inventory' in function_name:
-                check_passed = function(session)                
-                check_string = Back.GREEN + '   \u2665   ' if check_passed else Back.RED + '   \u2020   '
+                check = function(session)                
+                check_string = Back.GREEN + '   \u2665   ' if check.compliance_status is not ComplianceStatus.NonCompliant else Back.RED + '   \u2020   '
                 checks_passed.append(check_string)
         lines = format_table_pattern.format(Back.BLACK + account_name, *checks_passed, Back.BLACK + '')
         print(lines)
@@ -93,6 +103,7 @@ def print_caller_identity():
         client = boto3.client('sts')
         response = client.get_caller_identity()
         arn = response['Arn']
+        account_id = response['Account']
         print('')
         print('========================================================================================================')
         print(f'Caller identity: {arn}')
@@ -103,24 +114,46 @@ def print_caller_identity():
         print(f'Unknown Caller identity. No access to do sts:GetCallerIdentity.')
         print(f'Make sure your current IAM User/Role has access to policies SecurityAudit and ReadOnlyAccess.')
         print('========================================================================================================')
+        return ''
         
+    return account_id
 
 
-# Account - MFA should be enabled on root user
-def inventory_account_mfa_on_root_user(session = boto3) -> bool:
+def inventory_account_mfa_on_root_user(session = boto3) -> Check:
+    check = Check('Account', 'MFA should be enabled on root user', ComplianceStatus.Compliant)
+
     client = session.client('iam')
     response = client.get_account_summary()
     account_mfa_enabled = response['SummaryMap']['AccountMFAEnabled']
     if not account_mfa_enabled:
         # print('$$$ MFA on ROOT is not enabled')
-        return False
-    return True
+        check.compliance_status = ComplianceStatus.NonCompliant
+    
+    return check
+    
+
+def inventory_cloudtrail_active(session = boto3) -> Check:
+    check = Check('CloudTrail', 'At least one active CloudTrail trail should be present in account', ComplianceStatus.Compliant)
+
+    client = session.client('cloudtrail', region)
+    response = client.list_trails()
+    trails = response['Trails']
+    for trail in trails:
+        trail_arn = trail['TrailARN']
+        response = client.get_trail_status(Name=trail_arn)
+        is_logging = response['IsLogging']
+        if is_logging:
+            return check
+
+    check.compliance_status = ComplianceStatus.NonCompliant
+    return check
 
 
-# EC2 - Security Groups should not be wide open for the world
-def inventory_ec2_wide_open_security_groups(session = boto3) -> bool:
+def inventory_ec2_wide_open_security_groups(session = boto3) -> Check:
+    check = Check('EC2', 'Security Groups should not be wide open for the world', ComplianceStatus.Compliant)
+
     client = session.client('ec2', region)
-    response = client.describe_security_groups()
+    response = client.describe_security_groups()    
     for security_group in response['SecurityGroups']:
         group_name = security_group['GroupName']
         for ip_permission in security_group['IpPermissions']:
@@ -131,32 +164,39 @@ def inventory_ec2_wide_open_security_groups(session = boto3) -> bool:
                     from_port = ip_permission['FromPort']
                     to_port = ip_permission['ToPort']
                     if from_port != 443 or to_port != 443:
-                        return False
-                        # print(f'$$$ Incompliant security group: {group_name}')
+                        check_metadata_1 = CheckMetadata('Security group', f'{group_name}')
+                        check_metadata_2 = CheckMetadata('Port ranges', f'From port: {from_port}  To port: {to_port}')
+                        check.add_metadata(check_metadata_1)
+                        check.add_metadata(check_metadata_2)
+                        check.compliance_status = ComplianceStatus.NonCompliant
     
-    return True
+    return check
 
 
-# # EC2 - Number of Instances
-# def inventory_ec2_instances(session = boto3):
-#     client = session.client('ec2', region)
-#     # print('inventory_ec2_instances')
+def inventory_iam_users(session = boto3) -> Check:
+    check = Check('IAM', 'IAM User with old access keys (over 90 days)', ComplianceStatus.Compliant)
 
-
-# IAM - Number of IAM Users
-def inventory_iam_users(session = boto3) -> bool:
     client = session.client('iam')
     response = client.list_users()
-    users_count = len(response['Users'])
-    if users_count > 0:
-        # print(f'$$$ {users_count} IAM Users found!')
-        return False
+    users = response['Users']
+    for user in users:
+        user_name = user['UserName']
+        response = client.list_access_keys(UserName=user_name)
+        for key in response['AccessKeyMetadata']:
+            created = key['CreateDate']
+            access_key_id = key['AccessKeyId']
+            age = datetime.datetime.now(datetime.timezone.utc) - created
+            if age.days > 90:
+                check_metadata_1 = CheckMetadata('User name', f'{user_name} (Key Id: {access_key_id}, Key days of age: {age.days})')                
+                check.add_metadata(check_metadata_1)
+                check.compliance_status = ComplianceStatus.NonCompliant
+        
+    return check
 
-    return True
 
+def inventory_wide_open_iam_role(session = boto3) -> Check:
+    check = Check('IAM', 'IAM Role wide open for the world', ComplianceStatus.Compliant)
 
-# IAM - Wide open IAM roles
-def inventory_wide_open_iam_role(session = boto3) -> bool:
     client = session.client('iam')
     response = client.list_roles()
     roles = response['Roles']
@@ -168,26 +208,86 @@ def inventory_wide_open_iam_role(session = boto3) -> bool:
             principal = statement['Principal']
             if 'AWS' in principal:
                 if principal['AWS'] == '*':
-                    # print(f'$$$ Wide open IAM Role: {role_name}')
-                    return False
+                    metadata = CheckMetadata('Role', f'{role_name}')                
+                    check.add_metadata(metadata)
+                    check.compliance_status = ComplianceStatus.NonCompliant
 
-    return True
+    return check
 
 
-# SQS - Wide open SQS queue
-def inventory_wide_open_sqs_queue(session = boto3) -> bool:
+def inventory_wide_open_sqs_queue(session = boto3) -> Check:
+    check = Check('SQS', 'SQS queue wide open for the world', ComplianceStatus.Compliant)
+
     client = session.client('sqs', region)
     response = client.list_queues()
     if 'QueueUrls' not in response:
-        return True
+        return check
         
     for queue_url in response['QueueUrls']:
         response_policy = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])
+        
         policy_json = response_policy['Attributes']['Policy']
         policy = eval(policy_json)
         for statement in policy['Statement']:
             if statement['Principal'] == '*':
-                return False    
+                metadata = CheckMetadata('SQS queue', f'{queue_url}')
+                check.add_metadata(metadata)
+                check.compliance_status = ComplianceStatus.NonCompliant
+
+    return check
         
-    return True
-        
+
+def inventory_wide_open_sns_topics(session = boto3) -> Check:
+    check = Check('SNS', 'SNS topic wide open for the world', ComplianceStatus.Compliant)
+
+    client = session.client('sns', region)
+    response = client.list_topics()  # NextToken='string')
+    topics = response['Topics']
+    
+    for topic in topics:
+        topic_arn = topic['TopicArn']
+        response = client.get_topic_attributes(TopicArn=topic_arn)
+        attributes = response['Attributes']
+        policy_json = attributes['Policy']
+        policy = eval(policy_json)
+        for statement in policy['Statement']:
+            if statement['Principal'] == '*':
+                metadata = CheckMetadata('SNS topic', f'{topic_arn}')
+                check.add_metadata(metadata)
+                check.compliance_status = ComplianceStatus.NonCompliant
+
+    return check
+
+
+def inventory_wide_open_s3_buckets(session = boto3) -> Check:
+    check = Check('S3', 'S3 bucket wide open for the world', ComplianceStatus.Compliant)
+
+    client = session.client('s3')
+    response = client.list_buckets()
+    for bucket in response['Buckets']:
+        bucket_name = bucket['Name']
+        try:
+            response = client.get_bucket_policy_status(Bucket=bucket_name)
+        except ClientError as e:
+            # No bucket policy exist
+            continue
+
+        policy_status = response['PolicyStatus']
+        if policy_status['IsPublic']:
+            response = client.get_bucket_policy(Bucket=bucket_name)
+            policy_json = response['Policy']
+            policy = eval(policy_json)
+            for statement in policy['Statement']:
+                if 'Condition' not in statement:
+                    metadata = CheckMetadata('Bucket name', f'{bucket_name}')
+                    check.add_metadata(metadata)
+                    check.compliance_status = ComplianceStatus.NonCompliant
+                    break
+                
+    return check
+
+
+# def inventory_follow_rds_best_practices(session = boto3) -> Check:
+#     check = Check('RDS', 'Follow RDS best practices', ComplianceStatus.Compliant)
+
+#     client = session.client('rds', region)

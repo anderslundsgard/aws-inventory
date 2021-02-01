@@ -37,9 +37,9 @@ Although the tool is very lightweight it can also be extended with additional ch
 
 *You can now choose between single or multi (AWS Organization) check*  
 
-**Alternative 1, Single account check**: Run AWS Inventory checks: ```. .run_single_checks```  
+**Alternative 1, Single account check**: ```. .run_single_checks```  
 
-**Alternative 2, Multi  account check**: Run AWS Inventory checks: ```. .run_org_checks```
+**Alternative 2, Multi  account check**: ```. .run_org_checks audit-role``` *(Note: Replace audit-role with the name of the audit role in your accounts.)*
 
 *Sample output for multi account assessment*
 ![Multi account check sample](./organization-scan-sample.png)

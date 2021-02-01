@@ -37,9 +37,62 @@ Resources:
         Statement: 
           - 
             Action: 
-              - "SQS:ReceiveMessage"
-            Effect: "Allow"
+              - SQS:ReceiveMessage
+            Effect: Allow
             Resource: !Ref TestWideOpenSqs
             Principal: '*'
       Queues: 
         - !Ref TestWideOpenSqs
+
+  TestWideOpenSnsTopic:
+    Type: AWS::SNS::Topic
+
+  TestWideOpenSnsPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties: 
+      PolicyDocument: 
+        Statement: 
+          - 
+            Action: 
+              - SNS:Subscribe
+            Effect: Allow
+            Resource: !Ref TestWideOpenSnsTopic
+            Principal: '*'
+      Topics: 
+        - !Ref TestWideOpenSnsTopic
+
+  TestWideOpenS3Bucket:
+    Type: AWS::S3::Bucket
+
+  TestWideOpenS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TestWideOpenS3Bucket
+      PolicyDocument:
+        Statement: 
+          - 
+            Action: 
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub arn:aws:s3:::${TestWideOpenS3Bucket}/*
+            Principal: '*'
+  
+  TestWideOpenWithContitionS3Bucket:
+    Type: AWS::S3::Bucket
+
+  TestWideOpenWithContitionS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref TestWideOpenWithContitionS3Bucket
+      PolicyDocument:
+        Statement: 
+          - 
+            Action: 
+              - s3:GetObject
+            Effect: Allow
+            Resource: !Sub arn:aws:s3:::${TestWideOpenWithContitionS3Bucket}/*
+            Principal: '*'
+            Condition:
+              StringLike:
+                aws:Referer:
+                  - 'http://www.example.com/*'
