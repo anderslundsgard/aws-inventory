@@ -83,7 +83,11 @@ def scan_organization_accounts(audit_role_name, regions):
         account_id = account['Id']
         accounts.append(account_id)
 
-        session = assume_role_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
+        try:
+            session = assume_role_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
+        except ClientError:
+            print(f'{Fore.YELLOW}{account_name}{Fore.WHITE} ({audit_role_name} not assumable)')
+            continue
 
         checks_passed = []
         for function in dsp:
