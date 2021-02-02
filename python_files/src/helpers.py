@@ -1,10 +1,10 @@
 import boto3
 
 
-def assume_role_session(RoleArn, SessionName, ExternalId=None):
+def assume_read_only_session(RoleArn, SessionName, ExternalId=None):
     """
     Usage:
-        session = role_arn_to_session(
+        session = assume_read_only_session(
             RoleArn='arn:aws:iam::012345678987:role/audit-role',
             RoleSessionName='SessionName')
         client = session.client('iam')
@@ -12,9 +12,9 @@ def assume_role_session(RoleArn, SessionName, ExternalId=None):
     client = boto3.client('sts')
     
     if not ExternalId: 
-        response = client.assume_role(RoleArn=RoleArn, RoleSessionName=SessionName)
+        response = client.assume_role(RoleArn=RoleArn, PolicyArns=[{'arn': 'arn:aws:iam::aws:policy/ReadOnlyAccess'}], RoleSessionName=SessionName)
     else:
-        response = client.assume_role(RoleArn=RoleArn, RoleSessionName=SessionName, ExternalId=ExternalId)
+        response = client.assume_role(RoleArn=RoleArn, PolicyArns=[{'arn': 'arn:aws:iam::aws:policy/ReadOnlyAccess'}], RoleSessionName=SessionName, ExternalId=ExternalId)
 
     return boto3.Session(
         aws_access_key_id=response['Credentials']['AccessKeyId'],

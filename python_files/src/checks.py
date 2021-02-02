@@ -1,7 +1,7 @@
 import boto3
 import datetime
 from botocore.exceptions import ClientError
-from helpers import assume_role_session, yes_or_no
+from helpers import assume_read_only_session, yes_or_no
 from colorama import Fore, Back, Style
 from assessment.assessment import Assessment, Check, CheckMetadata, ComplianceStatus
 
@@ -87,7 +87,7 @@ def scan_organization_accounts(audit_role_name, regions):
         assessment = Assessment(account_name, account_id)
 
         try:
-            session = assume_role_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
+            session = assume_read_only_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
         except ClientError:
             print(f'{Fore.YELLOW}{account_name}{Fore.WHITE} ({audit_role_name} not assumable)')
             continue
