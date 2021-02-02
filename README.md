@@ -37,9 +37,12 @@ Although the tool is very lightweight it can also be extended with additional ch
 
 *You can now choose between single or multi (AWS Organization) check*  
 
-**Alternative 1, Single account check**: ```. .run_single_checks```  
+**Alt. 1, Single account check**: ```. .run_single_checks re-gion-1```  
+*(Note: Use ',' for multi-region scan. Ireland is default region)*  
 
-**Alternative 2, Multi  account check**: ```. .run_org_checks audit-role re-gion-1``` *(Note: Replace audit-role with the name of the audit role in your accounts.)*
+**Alt. 2, Multi  account check**: ```. .run_org_checks audit-role re-gion-1```  
+*(Note: Replace audit-role with the name of the audit role in your accounts)*
+*(Note: Use ',' for multi-region scan. Ireland is default region)*  
 
 *Sample output for multi account assessment*
 ![Multi account check sample](./organization-scan-sample.png)

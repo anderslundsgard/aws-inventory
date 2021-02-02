@@ -22,3 +22,11 @@ def assume_role_session(RoleArn, SessionName, ExternalId=None):
         aws_session_token=response['Credentials']['SessionToken'],
         region_name='eu-west-1'
     )
+
+
+def yes_or_no(question):
+    reply = str(input(question + ' (Y/n): ')).lower().strip()
+    if reply == 'n':
+        return False
+    else:
+        return True

@@ -1,13 +1,13 @@
 import boto3
 import datetime
 from botocore.exceptions import ClientError
-from helpers import assume_role_session
+from helpers import assume_role_session, yes_or_no
 from colorama import Fore, Back, Style
 from assessment.assessment import Assessment, Check, CheckMetadata, ComplianceStatus
 
 
-def scan_single_account():
-    regions = 'eu-west-1'
+def scan_single_account(regions):
+    
     account_id = print_caller_identity()
 
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
@@ -77,11 +77,14 @@ def scan_organization_accounts(audit_role_name, regions):
     header_line = format_table_pattern_header.format('Account Name', *header_checks_columns)
     print(header_line)
 
+    found_scan_issues = []
+    assessments = []
     # Scan all accounts
     for account in response['Accounts']:
         account_name = account['Name']
         account_id = account['Id']
         accounts.append(account_id)
+        assessment = Assessment(account_name, account_id)
 
         try:
             session = assume_role_session(RoleArn=f'arn:aws:iam::{account_id}:role/{audit_role_name}', SessionName='AWS-Inventory')
@@ -93,12 +96,43 @@ def scan_organization_accounts(audit_role_name, regions):
         for function in dsp:
             function_name = function.__name__
             if 'inventory' in function_name:
-                check = function(regions, session)                
-                check_string = Back.GREEN + '   \u2665   ' if check.compliance_status is not ComplianceStatus.NonCompliant else Back.RED + '   \u2020   '
+                try:
+                    check = function(regions, session)
+                except Exception as e:
+                    check_string = Back.YELLOW + '   ?   '                    
+                    checks_passed.append(check_string)
+                    issue = f'{account_name} ({account_id}) - {function_name}: {e.args}'
+                    found_scan_issues.append(issue)
+                    continue
+
+                if check.compliance_status is ComplianceStatus.Compliant:
+                    check_string = Back.GREEN + '   \u2665   '
+                else:
+                    check_string = Back.RED + '   \u2020   '
+                
                 checks_passed.append(check_string)
+                assessment.add_check(check)                 
+                
         lines = format_table_pattern.format(Back.BLACK + account_name, *checks_passed, Back.BLACK + '')
         print(lines)
 
+        assessments.append(assessment)
+
+
+    if len(found_scan_issues) > 0:
+        print('\n----------------------------------------------------------------------------------------------------')
+        print('***** Scan issues *****')
+        for issue in found_scan_issues:
+            print(issue)
+        print('\n----------------------------------------------------------------------------------------------------')
+
+
+    if yes_or_no('Print assessment details?'):
+        print('\n----------------------------------------------------------------------------------------------------')
+        print('***** ASSESSMENTS DETAILS *****')
+        for assessment in assessments:
+            print(str(assessment))
+        print('\n----------------------------------------------------------------------------------------------------')
 
 def print_caller_identity():
     try:
@@ -137,40 +171,46 @@ def inventory_account_mfa_on_root_user(regions, session = boto3) -> Check:
 def inventory_cloudtrail_active(regions, session = boto3) -> Check:
     check = Check('CloudTrail', 'At least one active CloudTrail trail should be present in account', ComplianceStatus.Compliant)
 
-    client = session.client('cloudtrail', regions)
-    response = client.list_trails()
-    trails = response['Trails']
-    for trail in trails:
-        trail_arn = trail['TrailARN']
-        response = client.get_trail_status(Name=trail_arn)
-        is_logging = response['IsLogging']
-        if is_logging:
-            return check
+    for region in regions:
+        client = session.client('cloudtrail', region)
+        response = client.list_trails()
+        trails = response['Trails']
+        trail_on = False
+        for trail in trails:
+            trail_arn = trail['TrailARN']
+            response = client.get_trail_status(Name=trail_arn)
+            is_logging = response['IsLogging']
+            if is_logging:
+                trail_on = True
+        if not trail_on:
+            metadata = CheckMetadata('No active trail', f'{region}')
+            check.add_metadata(metadata)
+            check.compliance_status = ComplianceStatus.NonCompliant
 
-    check.compliance_status = ComplianceStatus.NonCompliant
     return check
 
 
 def inventory_ec2_wide_open_security_groups(regions, session = boto3) -> Check:
     check = Check('EC2', 'Security Groups should not be wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('ec2', regions)
-    response = client.describe_security_groups()    
-    for security_group in response['SecurityGroups']:
-        group_name = security_group['GroupName']
-        for ip_permission in security_group['IpPermissions']:
-            ip_ranges = ip_permission['IpRanges']
-            for ip_range in ip_ranges:
-                cidr_ip = ip_range['CidrIp']
-                if cidr_ip == '0.0.0.0/0':
-                    from_port = ip_permission['FromPort']
-                    to_port = ip_permission['ToPort']
-                    if from_port != 443 or to_port != 443:
-                        check_metadata_1 = CheckMetadata('Security group', f'{group_name}')
-                        check_metadata_2 = CheckMetadata('Port ranges', f'From port: {from_port}  To port: {to_port}')
-                        check.add_metadata(check_metadata_1)
-                        check.add_metadata(check_metadata_2)
-                        check.compliance_status = ComplianceStatus.NonCompliant
+    for region in regions:
+        client = session.client('ec2', region)
+        response = client.describe_security_groups()    
+        for security_group in response['SecurityGroups']:
+            group_name = security_group['GroupName']
+            for ip_permission in security_group['IpPermissions']:
+                ip_ranges = ip_permission['IpRanges']
+                for ip_range in ip_ranges:
+                    cidr_ip = ip_range['CidrIp']
+                    if cidr_ip == '0.0.0.0/0':
+                        from_port = ip_permission['FromPort']
+                        to_port = ip_permission['ToPort']
+                        if from_port != 443 or to_port != 443:
+                            check_metadata_1 = CheckMetadata('Security group', f'{group_name} ({region})')
+                            check_metadata_2 = CheckMetadata('Port ranges', f'From port: {from_port}  To port: {to_port}')
+                            check.add_metadata(check_metadata_1)
+                            check.add_metadata(check_metadata_2)
+                            check.compliance_status = ComplianceStatus.NonCompliant
     
     return check
 
@@ -220,21 +260,22 @@ def inventory_wide_open_iam_role(regions, session = boto3) -> Check:
 def inventory_wide_open_sqs_queue(regions, session = boto3) -> Check:
     check = Check('SQS', 'SQS queue wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('sqs', regions)
-    response = client.list_queues()
-    if 'QueueUrls' not in response:
-        return check
-        
-    for queue_url in response['QueueUrls']:
-        response_policy = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])
-        
-        policy_json = response_policy['Attributes']['Policy']
-        policy = eval(policy_json)
-        for statement in policy['Statement']:
-            if statement['Principal'] == '*':
-                metadata = CheckMetadata('SQS queue', f'{queue_url}')
-                check.add_metadata(metadata)
-                check.compliance_status = ComplianceStatus.NonCompliant
+    for region in regions:
+        client = session.client('sqs', region)
+        response = client.list_queues()
+        if 'QueueUrls' not in response:
+            return check
+            
+        for queue_url in response['QueueUrls']:
+            response_policy = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])
+            
+            policy_json = response_policy['Attributes']['Policy']
+            policy = eval(policy_json)
+            for statement in policy['Statement']:
+                if statement['Principal'] == '*':
+                    metadata = CheckMetadata('SQS queue', f'{queue_url} ({region})')
+                    check.add_metadata(metadata)
+                    check.compliance_status = ComplianceStatus.NonCompliant
 
     return check
         
@@ -242,21 +283,22 @@ def inventory_wide_open_sqs_queue(regions, session = boto3) -> Check:
 def inventory_wide_open_sns_topics(regions, session = boto3) -> Check:
     check = Check('SNS', 'SNS topic wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('sns', regions)
-    response = client.list_topics()  # NextToken='string')
-    topics = response['Topics']
-    
-    for topic in topics:
-        topic_arn = topic['TopicArn']
-        response = client.get_topic_attributes(TopicArn=topic_arn)
-        attributes = response['Attributes']
-        policy_json = attributes['Policy']
-        policy = eval(policy_json)
-        for statement in policy['Statement']:
-            if statement['Principal'] == '*':
-                metadata = CheckMetadata('SNS topic', f'{topic_arn}')
-                check.add_metadata(metadata)
-                check.compliance_status = ComplianceStatus.NonCompliant
+    for region in regions:
+        client = session.client('sns', region)
+        response = client.list_topics()  # NextToken='string')
+        topics = response['Topics']
+        
+        for topic in topics:
+            topic_arn = topic['TopicArn']
+            response = client.get_topic_attributes(TopicArn=topic_arn)
+            attributes = response['Attributes']
+            policy_json = attributes['Policy']
+            policy = eval(policy_json)
+            for statement in policy['Statement']:
+                if statement['Principal'] == '*':
+                    metadata = CheckMetadata('SNS topic', f'{topic_arn} ({region})')
+                    check.add_metadata(metadata)
+                    check.compliance_status = ComplianceStatus.NonCompliant
 
     return check
 

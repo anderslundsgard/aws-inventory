@@ -9,6 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "./python_files/src/main_single.py",
+            "args": ["eu-central-1,eu-west-1"],
             "console": "integratedTerminal"
         },
         {
@@ -16,6 +17,7 @@
             "type": "python",
             "request": "launch",
             "program": "./python_files/src/main_multi.py",
+            "args": ["gov-audit-role", "eu-west-1,eu-north-1"],
             "console": "integratedTerminal"
         }
     ]
