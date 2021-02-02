@@ -3,10 +3,12 @@ from checks import scan_single_account
 
 
 def print_usage():
+    print('\n====================================================')
     print('Usage:')
     print('>. .run_single_checks re-gion-1')
     print('..or multi region:')
     print('>. .run_single_checks re-gion-1,re-gion-2')
+    print('====================================================')
 
 opts, args = getopt.getopt(sys.argv[1:], "ho:v", ["help", "output="])
 
