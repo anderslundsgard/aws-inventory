@@ -6,10 +6,8 @@ from colorama import Fore, Back, Style
 from assessment.assessment import Assessment, Check, CheckMetadata, ComplianceStatus
 
 
-region = 'eu-west-1'
-
-
 def scan_single_account():
+    regions = 'eu-west-1'
     account_id = print_caller_identity()
 
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
@@ -19,7 +17,7 @@ def scan_single_account():
     for function in dsp:
         function_name = function.__name__
         if 'inventory' in function_name:
-            check = function()
+            check = function(regions)
             if not check or check.compliance_status is ComplianceStatus.Compliant:
                 continue
             assessment.add_check(check)
@@ -36,7 +34,7 @@ def scan_single_account():
     print('DONE!')
 
 
-def scan_organization_accounts(audit_role_name):
+def scan_organization_accounts(audit_role_name, regions):
     print_caller_identity()
 
     dsp = [f for fname, f in sorted(globals().items()) if callable(f)]
@@ -91,7 +89,7 @@ def scan_organization_accounts(audit_role_name):
         for function in dsp:
             function_name = function.__name__
             if 'inventory' in function_name:
-                check = function(session)                
+                check = function(regions, session)                
                 check_string = Back.GREEN + '   \u2665   ' if check.compliance_status is not ComplianceStatus.NonCompliant else Back.RED + '   \u2020   '
                 checks_passed.append(check_string)
         lines = format_table_pattern.format(Back.BLACK + account_name, *checks_passed, Back.BLACK + '')
@@ -119,7 +117,7 @@ def print_caller_identity():
     return account_id
 
 
-def inventory_account_mfa_on_root_user(session = boto3) -> Check:
+def inventory_account_mfa_on_root_user(regions, session = boto3) -> Check:
     check = Check('Account', 'MFA should be enabled on root user', ComplianceStatus.Compliant)
 
     client = session.client('iam')
@@ -132,10 +130,10 @@ def inventory_account_mfa_on_root_user(session = boto3) -> Check:
     return check
     
 
-def inventory_cloudtrail_active(session = boto3) -> Check:
+def inventory_cloudtrail_active(regions, session = boto3) -> Check:
     check = Check('CloudTrail', 'At least one active CloudTrail trail should be present in account', ComplianceStatus.Compliant)
 
-    client = session.client('cloudtrail', region)
+    client = session.client('cloudtrail', regions)
     response = client.list_trails()
     trails = response['Trails']
     for trail in trails:
@@ -149,10 +147,10 @@ def inventory_cloudtrail_active(session = boto3) -> Check:
     return check
 
 
-def inventory_ec2_wide_open_security_groups(session = boto3) -> Check:
+def inventory_ec2_wide_open_security_groups(regions, session = boto3) -> Check:
     check = Check('EC2', 'Security Groups should not be wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('ec2', region)
+    client = session.client('ec2', regions)
     response = client.describe_security_groups()    
     for security_group in response['SecurityGroups']:
         group_name = security_group['GroupName']
@@ -173,7 +171,7 @@ def inventory_ec2_wide_open_security_groups(session = boto3) -> Check:
     return check
 
 
-def inventory_iam_users(session = boto3) -> Check:
+def inventory_iam_users(regions, session = boto3) -> Check:
     check = Check('IAM', 'IAM User with old access keys (over 90 days)', ComplianceStatus.Compliant)
 
     client = session.client('iam')
@@ -194,7 +192,7 @@ def inventory_iam_users(session = boto3) -> Check:
     return check
 
 
-def inventory_wide_open_iam_role(session = boto3) -> Check:
+def inventory_wide_open_iam_role(regions, session = boto3) -> Check:
     check = Check('IAM', 'IAM Role wide open for the world', ComplianceStatus.Compliant)
 
     client = session.client('iam')
@@ -215,10 +213,10 @@ def inventory_wide_open_iam_role(session = boto3) -> Check:
     return check
 
 
-def inventory_wide_open_sqs_queue(session = boto3) -> Check:
+def inventory_wide_open_sqs_queue(regions, session = boto3) -> Check:
     check = Check('SQS', 'SQS queue wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('sqs', region)
+    client = session.client('sqs', regions)
     response = client.list_queues()
     if 'QueueUrls' not in response:
         return check
@@ -237,10 +235,10 @@ def inventory_wide_open_sqs_queue(session = boto3) -> Check:
     return check
         
 
-def inventory_wide_open_sns_topics(session = boto3) -> Check:
+def inventory_wide_open_sns_topics(regions, session = boto3) -> Check:
     check = Check('SNS', 'SNS topic wide open for the world', ComplianceStatus.Compliant)
 
-    client = session.client('sns', region)
+    client = session.client('sns', regions)
     response = client.list_topics()  # NextToken='string')
     topics = response['Topics']
     
@@ -259,7 +257,7 @@ def inventory_wide_open_sns_topics(session = boto3) -> Check:
     return check
 
 
-def inventory_wide_open_s3_buckets(session = boto3) -> Check:
+def inventory_wide_open_s3_buckets(regions, session = boto3) -> Check:
     check = Check('S3', 'S3 bucket wide open for the world', ComplianceStatus.Compliant)
 
     client = session.client('s3')
