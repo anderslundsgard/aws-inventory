@@ -8,6 +8,7 @@
 - [x] SQS - Ensure SQS queues are not wide open
 - [x] SNS - Ensure SNS Topics are not wide open
 - [x] S3 - Do not accidentally expose S3 object to the whole world
+- [x] S3 - S3 Should not host static website
 - [ ] RDS - RDS should not be publicly accessible
 - [ ] RDS - RDS Databases should have automated backups enabled
 

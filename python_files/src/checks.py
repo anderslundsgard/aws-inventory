@@ -99,7 +99,7 @@ def scan_organization_accounts(audit_role_name, regions):
                 try:
                     check = function(regions, session)
                 except Exception as e:
-                    check_string = Back.YELLOW + '   ?   '                    
+                    check_string = Back.LIGHTBLACK_EX + '   ?   '                    
                     checks_passed.append(check_string)
                     issue = f'{account_name} ({account_id}) - {function_name}: {e.args}'
                     found_scan_issues.append(issue)
@@ -330,6 +330,24 @@ def inventory_wide_open_s3_buckets(regions, session = boto3) -> Check:
                 
     return check
 
+
+def inventory_s3_as_static_website(regions, session = boto3) -> Check:
+    check = Check('S3', 'S3 bucket should not be used for static hosting', ComplianceStatus.Compliant)
+
+    client = session.client('s3')
+    response = client.list_buckets()
+    for bucket in response['Buckets']:
+        bucket_name = bucket['Name']
+        try:
+            response = client.get_bucket_website(Bucket=bucket_name)
+
+            metadata = CheckMetadata('Bucket name', f'{bucket_name}')
+            check.add_metadata(metadata)
+            check.compliance_status = ComplianceStatus.NonCompliant
+        except:
+            pass
+
+    return check
 
 # def inventory_follow_rds_best_practices(session = boto3) -> Check:
 #     check = Check('RDS', 'Follow RDS best practices', ComplianceStatus.Compliant)

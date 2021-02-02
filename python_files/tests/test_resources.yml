@@ -79,6 +79,9 @@ Resources:
   
   TestWideOpenWithContitionS3Bucket:
     Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
 
   TestWideOpenWithContitionS3BucketPolicy:
     Type: AWS::S3::BucketPolicy
