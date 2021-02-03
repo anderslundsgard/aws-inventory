@@ -28,7 +28,7 @@ Although the tool is very lightweight it can also be extended with additional ch
 
 ## Try it out!
 
-1. Log in to an AWS account of your choice. Access to CloudShell is needed and [SecurityAudit][2] + [ReadOnlyAccess][3] permission on your IAM User/Role is needed. 
+1. Log in to an AWS account of your choice. Access to CloudShell is needed and [ReadOnlyAccess][2] permission on your IAM User/Role is needed. 
     - *ToDo: Link to sample role and policy*
 2. Open CloudShell
 3. Clone this repository: ```git clone https://github.com/anderslundsgard/aws-inventory.git```
@@ -49,6 +49,4 @@ Although the tool is very lightweight it can also be extended with additional ch
 
 
 [1]: https://aws.amazon.com/cloudshell/
-[2]: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_security-auditor
-[3]: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#aws-managed-policies
-[4]: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html#jf_administrator
+[2]: https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html#aws-managed-policies
