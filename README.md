@@ -29,7 +29,6 @@ Although the tool is very lightweight it can also be extended with additional ch
 ## Try it out!
 
 1. Log in to an AWS account of your choice. Access to CloudShell is needed and [ReadOnlyAccess][2] permission on your IAM User/Role is needed. 
-    - *ToDo: Link to sample role and policy*
 2. Open CloudShell
 3. Clone this repository: ```git clone https://github.com/anderslundsgard/aws-inventory.git```
 4. Step into repo folder: ```cd aws-inventory```
@@ -41,7 +40,7 @@ Although the tool is very lightweight it can also be extended with additional ch
 *(Note: Use ',' for multi-region scan. Ireland is default region)*  
 
 **Alt. 2, Multi  account check**: ```. .run_org_checks audit-role re-gion-1```  
-*(Note: Replace audit-role with the name of the audit role in your accounts)*
+*(Note: Replace audit-role with the name of the audit role in your accounts)*  
 *(Note: Use ',' for multi-region scan. Ireland is default region)*  
 
 *Sample output for multi account assessment*
