@@ -6,8 +6,8 @@ A set of checks for doing audit and inventory of AWS accounts. Perfect suitable 
 ## Stage of the project
 
 - [x] Early stage
-- [ ] Used for a single professional audit of AWS account(s)
-- [ ] Used several times for large Enterprise AWS Organizations
+- [x] Used for a few professional audits of AWS account(s)
+- [ ] Used several times, by different auditors in large Enterprise AWS Organizations
 
 ## Purpose
 The purpose of AWS Inventory is for Cloud Engineers and Security Professionals to do a quick audit on AWS accounts. This with the only requirement of having audit access for the accounts to investigate.  
